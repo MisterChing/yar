@@ -233,7 +233,8 @@ static int php_yar_client_set_opt(zval *client, long type, zval *value) /* {{{ *
 
 static int php_yar_client_handle(int protocol, zval *client, zend_string *method, zval *params, zval *retval) /* {{{ */ {
 	char *msg;
-	zval *uri, *options;
+	const char* host_str = NULL;
+	zval *uri, *options, *host;
 	zval rv;
 	yar_transport_t *factory;
 	yar_transport_interface_t *transport;
@@ -259,6 +260,12 @@ static int php_yar_client_handle(int protocol, zval *client, zend_string *method
 		options = NULL;
 	}
 
+	//dy
+	if (options && (host = zend_hash_str_find(Z_ARRVAL(*options), ZEND_STRL("host"))) != NULL) {
+		convert_to_string_ex(host);
+		host_str = Z_STRVAL_P(host);
+	}
+
 	if (!(request = php_yar_request_instance(method, params, options))) {
 		transport->close(transport);
 		factory->destroy(transport);
@@ -276,7 +283,7 @@ static int php_yar_client_handle(int protocol, zval *client, zend_string *method
 
 	/* This is tricky to pass options in, for custom headers*/
 	msg = (char*)options;
-	if (!transport->open(transport, Z_STR_P(uri), flags, &msg)) {
+	if (!transport->open(transport, Z_STR_P(uri), flags, &msg, host_str)) {
 		php_yar_client_trigger_error(1, YAR_ERR_TRANSPORT, msg);
 		php_yar_request_destroy(request);
 		efree(msg);
@@ -469,8 +476,18 @@ int php_yar_concurrent_client_handle(zval *callstack) /* {{{ */ {
 			return 0;
 		}
 
+		//dy
+		const char* host_str = NULL;
+		zval *host;
+		if (IS_ARRAY == Z_TYPE_P(&entry->options)) {
+			if ((host = zend_hash_str_find(Z_ARRVAL(entry->options), ZEND_STRL("host"))) != NULL) {
+				convert_to_string_ex(host);
+				host_str = Z_STRVAL_P(host);
+			}
+		}
+
 		msg = (char*)&entry->options;
-		if (!transport->open(transport, entry->uri, flags, &msg)) {
+		if (!transport->open(transport, entry->uri, flags, &msg, host_str)) {
 			php_yar_client_trigger_error(1, YAR_ERR_TRANSPORT, msg);
 			transport->close(transport);
 			factory->destroy(transport);

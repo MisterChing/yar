@@ -135,7 +135,7 @@ size_t php_yar_curl_buf_writer(char *ptr, size_t size, size_t nmemb, void *ctx) 
 	return len;
 } /* }}} */
 
-int php_yar_curl_open(yar_transport_interface_t *self, zend_string *address, long options, char **msg) /* {{{ */ {
+int php_yar_curl_open(yar_transport_interface_t *self, zend_string *address, long options, char **msg, const char* host) /* {{{ */ {
 	CURL *cp = NULL;
 	php_url *url;
 	char buf[1024];
@@ -243,8 +243,15 @@ regular_link:
 		data->headers = curl_slist_append(data->headers, "Connection: close");
 	}
 
-	snprintf(buf, sizeof(buf), "Hostname: %s", url->host);
-	buf[sizeof(buf) - 1] = '\0';
+	//dy
+	if (!host) {
+		snprintf(buf, sizeof(buf), "Hostname: %s", url->host);
+		buf[sizeof(buf) - 1] = '\0';
+	} else {
+		snprintf(buf, sizeof(buf), "Hostname: %s", host);
+		buf[sizeof(buf) - 1] = '\0';
+	}
+
 	data->headers = curl_slist_append(data->headers, buf);
 
 	if (configs && IS_ARRAY == Z_TYPE_P(configs)) {

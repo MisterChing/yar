@@ -110,6 +110,13 @@ $client->SetOpt(YAR_OPT_HEADER, array("hd1: val", "hd2: val"));  //Custom header
 $result = $client->some_method("parameter");
 ?>
 ```
+### bind host supported
+```php
+<?php
+$client = new Yar_Client("http://127.0.0.1:8080/", "some_method", array("parameters"), "callback", null, array('host'=>$host));
+?>
+```
+
 ### Concurrent call
 ```php
 <?php
